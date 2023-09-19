@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag and Drop With Touch Events</title>
+</head>
+
+<body>
+    <div id="items" class="items">
+        <div id="column" class="column">
+            <div class="item" style="background-color: #808080;" draggable="true">Item 01</div>
+            <div class="item" style="background-color: #ADD8E6;" draggable="true">Item 02</div>
+            <div class="item" style="background-color: #008B8B;" draggable="true">Item 03</div>
+            <div class="item" style="background-color: #00FF7F;" draggable="true">Item 04</div>
+            <div class="item" style="background-color: #BC8F8F;" draggable="true">Item 05</div>
+            <div class="item" style="background-color: #DA70D6;" draggable="true">Item 06</div>
+        </div>
+    </div>
+
+    <script>
+        const column = document.getElementById("column");
+        const item = document.querySelectorAll('.item');
+        const draggableContainer = document.getElementById('column');
+
+        let startY = 0;
+        let endY = 0;
+        let itemToMove = null;
+        let initialTop = 0;
+        let dragging = null;
+
+        document.addEventListener("touchstart", (e) => {
+            if (e.target.classList.contains("item")) {
+                startY = e.touches[0] ? e.touches[0].clientY : 0;
+                itemToMove = e.target;
+                initialTop = itemToMove.getBoundingClientRect().top + window.scrollY;
+                itemToMove.classList.add("dragging");
+            }
+        });
+
+        document.addEventListener("touchend", (e) => {
+            dragging = document.querySelector(".dragging");
+            endY = e.changedTouches[0] ? e.changedTouches[0].clientY : 0;
+            dragging.style.transform = '';
+
+            const applyAfter = getNewPosition(column, endY);
+            dragging.classList.remove("dragging");
+
+            if (applyAfter !== dragging) {
+                dragging.remove();
+
+                if (applyAfter) {
+                    if (applyAfter.direction === "up") {
+                        applyAfter.insertAdjacentElement("beforebegin", dragging);
+                    } else {
+                        applyAfter.insertAdjacentElement("afterend", dragging);
+                    }
+                } else {
+                    column.prepend(dragging);
+                }
+            }
+        });
+
+        document.addEventListener("touchmove", (e) => {
+            if (itemToMove && e.touches[0]) {
+                const dragging = document.querySelector(".dragging");
+
+                if (dragging) {
+                    const deltaY = e.touches[0].clientY - startY;
+                    const currentPosition = initialTop + deltaY;
+                    const containerPosition = dragging.parentElement.getBoundingClientRect();
+                    const topLimit = containerPosition.top;
+                    const bottomLimit = containerPosition.bottom - dragging.clientHeight;
+
+                    if (currentPosition >= topLimit && currentPosition <= bottomLimit) {
+                        dragging.style.transform = `translateY(${deltaY}px)`;
+                    }
+                }
+            }
+        });
+
+
+        function getNewPosition(column, posY) {
+            const cards = Array.from(column.querySelectorAll(".item:not(.dragging)"));
+
+            let closestCard = null;
+            let closestDistance = Number.POSITIVE_INFINITY;
+
+            for (let card of cards) {
+                const box = card.getBoundingClientRect();
+                const boxCenterY = box.top + box.height / 2;
+                const distance = Math.abs(posY - boxCenterY);
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestCard = card;
+                    closestCard.direction = posY < boxCenterY ? "up" : "down";
+                }
+            }
+
+            return closestCard;
+        }
+
+
+
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'poppins';
+            font-size: 30px;
+        }
+
+        .items {
+            display: flex;
+            justify-content: center;
+            min-height: 400px;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            background-color: #FCF9F9;
+            min-width: 200px;
+            border-radius: 5px;
+            border: solid 1px black;
+        }
+
+        .item {
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .dragging {
+            opacity: 0.5;
+        }
+    </style>
+</body>
+
+</html>
